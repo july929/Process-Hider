@@ -111,9 +111,9 @@ auto ph::external::map_param( ) -> void*
 	/// Here you can add more processes to hide (case-insensitive)
 	/// NOTE: Make sure param->process_count is equal to the number of processes you add
 
-	local_process_list[0] = sdk::wstring( xorstr( L"Process-Hider.exe" ) ).get_data( );
-	local_process_list[1] = sdk::wstring( xorstr( L"Spotify.exe" ) ).get_data( );
-	local_process_list[2] = sdk::wstring( xorstr( L"Discord.exe" ) ).get_data( );
+	local_process_list[0] = sdk::wstring( xorstr( L"Process-Hider.exe" ) ).get_data( ); /// 隐藏程序本身
+	local_process_list[1] = sdk::wstring( xorstr( L"SEWanClt.exe" ) ).get_data( ); /// 隐藏同步专家远程版
+	local_process_list[2] = sdk::wstring( xorstr( L"SEBarClt.exe" ) ).get_data( ); /// 隐藏同步专家网吧版
 
 	/// Allocate memory for each process name in the target process
 
