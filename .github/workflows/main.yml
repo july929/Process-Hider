@@ -1,16 +1,16 @@
-name: Build Process-Hider and Create Release
+name: Build Process-Hider
 
 on:
   push:
     branches:
       - master
       - main
-  workflow_dispatch:  # 允许手动触发
+  workflow_dispatch:
 
 jobs:
   build:
-    runs-on: windows-latest  # 切换到 Windows 运行器
-    permissions: write-all   # 保持创建 Release 的权限
+    runs-on: windows-latest
+    permissions: write-all
     
     steps:
       # Step 1: 检出代码
@@ -23,38 +23,53 @@ jobs:
       - name: Setup MSVC compiler
         uses: ilammy/msvc-dev-cmd@v1
         with:
-          arch: x64  # 编译为 64 位程序
+          arch: x64
 
       # Step 3: 构建 EXE 文件
       - name: Build executable
         run: |
-          # 显示当前目录结构，帮助调试
+          # 显示目录结构
+          echo "Current directory:"
           dir
+          echo "Process-Hider subdirectory:"
+          dir Process-Hider
           
-          # 尝试使用 MSBuild 编译解决方案文件
-          if (Test-Path "*.sln") {
-            msbuild *.sln /p:Configuration=Release /p:Platform=x64 /p:OutDir=.\build_output\
-          } 
-          # 如果没有 .sln 文件，尝试直接编译所有 .cpp 文件
-          else {
-            # 收集所有 .cpp 文件
-            $cppFiles = Get-ChildItem -Filter *.cpp | ForEach-Object { $_.Name }
-            if ($cppFiles) {
-              cl /EHsc /MT /Fe:Process-Hider.exe $cppFiles
-            } else {
-              Write-Error "No source files found!"
-              exit 1
+          # 直接构建解决方案文件（使用完整路径）
+          msbuild Process-Hider.sln /p:Configuration=Release /p:Platform=x64 /p:OutDir=.\build_output\
+          
+          # 创建 artifacts 目录
+          mkdir artifacts -ErrorAction SilentlyContinue
+          
+          # 从标准输出目录查找生成的 exe
+          $exePaths = @(
+            ".\build_output\Process-Hider.exe",
+            ".\x64\Release\Process-Hider.exe",
+            ".\Release\Process-Hider.exe",
+            ".\Process-Hider\Release\Process-Hider.exe"
+          )
+          
+          $found = $false
+          foreach ($path in $exePaths) {
+            if (Test-Path $path) {
+              Copy-Item $path -Destination .\artifacts\
+              echo "Found and copied: $path"
+              $found = $true
+              break
             }
           }
           
-          # 创建 artifacts 目录并复制生成的文件
-          mkdir artifacts -ErrorAction SilentlyContinue
-          # 查找生成的 .exe 文件（可能在当前目录或 build_output 目录）
-          Get-ChildItem -Recurse -Filter *.exe | Where-Object { $_.Name -like "*Process-Hider*.exe" } | Copy-Item -Destination .\artifacts\
+          # 如果没找到，尝试递归搜索
+          if (-not $found) {
+            $exe = Get-ChildItem -Recurse -Filter "Process-Hider.exe" | Select-Object -First 1
+            if ($exe) {
+              Copy-Item $exe.FullName -Destination .\artifacts\
+              echo "Found and copied via search: $($exe.FullName)"
+              $found = $true
+            }
+          }
           
-          # 确保至少有一个文件被复制
-          if ((Get-ChildItem artifacts\*.exe).Count -eq 0) {
-            Write-Error "No executable found to copy!"
+          if (-not $found) {
+            Write-Error "Process-Hider.exe not found!"
             exit 1
           }
 
@@ -64,14 +79,14 @@ jobs:
           echo "Generated files:"
           dir artifacts
 
-      # Step 5: 上传工件（供 Actions 页面下载）
+      # Step 5: 上传工件
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: Process-Hider-x64
           path: artifacts/*
 
-      # Step 6: 获取当前时间（用于版本标签）
+      # Step 6: 获取当前时间
       - name: Get current time
         id: current-time
         uses: josStorer/get-current-time@v2.0.2
