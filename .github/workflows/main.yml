@@ -1,4 +1,4 @@
-name: Build Process-Hider
+name: Build Process-Hider.exe
 
 on:
   push:
