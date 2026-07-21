@@ -104,7 +104,7 @@ auto ph::external::map_param( ) -> void*
 	auto param = ( sdk::loader* ) sdk::handler::allocate( sizeof( sdk::loader ) );
 
 	param->__is_valid_flag = 0xDEAD; // used to indicate that the structure is valid :P
-	param->process_count = 8;
+	param->process_count = 9;
 
 	auto local_process_list = ( wchar_t** ) sdk::handler::allocate( sizeof( wchar_t* ) * param->process_count );
 
@@ -116,9 +116,10 @@ auto ph::external::map_param( ) -> void*
 	local_process_list[2] = sdk::wstring( xorstr( L"SEBarClt.exe" ) ).get_data( ); /// 隐藏同步专家网吧版
 	local_process_list[3] = sdk::wstring( xorstr( L"AweSun.exe" ) ).get_data( ); /// 隐藏向日葵远程客户端
 	local_process_list[4] = sdk::wstring( xorstr( L"AskLink.exe" ) ).get_data( ); /// 隐藏连连控客户端
-	local_process_list[5] = sdk::wstring( xorstr( L"GameViewer.exe" ) ).get_data( ); /// 隐藏网易UU远程客户端
-	local_process_list[6] = sdk::wstring( xorstr( L"GameViewerServer.exe" ) ).get_data( ); /// 隐藏网易UU远程服务
-	local_process_list[7] = sdk::wstring( xorstr( L"ToDesk.exe" ) ).get_data( ); /// 隐藏Todesk客户端
+	local_process_list[5] = sdk::wstring( xorstr( L"AskLinkSession.exe" ) ).get_data( ); /// 隐藏连连控服务
+	local_process_list[6] = sdk::wstring( xorstr( L"GameViewer.exe" ) ).get_data( ); /// 隐藏网易UU远程客户端
+	local_process_list[7] = sdk::wstring( xorstr( L"GameViewerServer.exe" ) ).get_data( ); /// 隐藏网易UU远程服务
+	local_process_list[8] = sdk::wstring( xorstr( L"ToDesk.exe" ) ).get_data( ); /// 隐藏Todesk客户端
 
 	/// Allocate memory for each process name in the target process
 
