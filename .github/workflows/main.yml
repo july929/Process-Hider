@@ -1,50 +1,121 @@
-# 工作流名称
-name: Build Process-Hider
+name: Build Process-Hider and Create Release
 
-# 触发条件：当代码推送到 main 或 master 分支时运行
 on:
   push:
-    branches: [ main, master ]
-  # 也允许你从 GitHub 网页手动触发
-  workflow_dispatch:
+    branches:
+      - master
+      - main
+  workflow_dispatch:  # 允许手动触发
 
 jobs:
   build:
-    # 在最新的 Windows 运行器上执行
-    runs-on: windows-latest
-
+    runs-on: windows-latest  # 切换到 Windows 运行器
+    permissions: write-all   # 保持创建 Release 的权限
+    
     steps:
-    # 1. 签出 (Checkout) 你的源代码
-    - name: Checkout code
-      uses: actions/checkout@v4
+      # Step 1: 检出代码
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          submodules: 'true'
 
-    # 2. 设置 Visual Studio 编译环境 (关键步骤)
-    # 这个 Action 会自动配置好 cl.exe, nmake 等命令行工具
-    - name: Setup MSVC compiler
-      uses: ilammy/msvc-dev-cmd@v1
-      with:
-        arch: x64 # 明确指定编译为 64 位程序
+      # Step 2: 设置 MSVC 编译环境
+      - name: Setup MSVC compiler
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64  # 编译为 64 位程序
 
-    # 3. 开始编译
-    # 这里假设项目根目录下有解决方案文件 (.sln) 或可以直接用 cl 命令编译。
-    # 由于项目没有提供具体的编译指令，以下提供两种常见方式：
-    
-    # 方式 A：如果项目有 .sln 文件，可以使用 MSBuild
-    - name: Build with MSBuild
-      run: |
-        msbuild Process-Hider.sln /p:Configuration=Release /p:Platform=x64
-    
-    # 方式 B：如果项目只有 .cpp 文件，可以直接调用 cl.exe (根据实际情况选一种)
-    # - name: Build with CL.exe
-    #   run: |
-    #     cl /EHsc /Fe:Process-Hider.exe *.cpp
+      # Step 3: 构建 EXE 文件
+      - name: Build executable
+        run: |
+          # 显示当前目录结构，帮助调试
+          dir
+          
+          # 尝试使用 MSBuild 编译解决方案文件
+          if (Test-Path "*.sln") {
+            msbuild *.sln /p:Configuration=Release /p:Platform=x64 /p:OutDir=.\build_output\
+          } 
+          # 如果没有 .sln 文件，尝试直接编译所有 .cpp 文件
+          else {
+            # 收集所有 .cpp 文件
+            $cppFiles = Get-ChildItem -Filter *.cpp | ForEach-Object { $_.Name }
+            if ($cppFiles) {
+              cl /EHsc /MT /Fe:Process-Hider.exe $cppFiles
+            } else {
+              Write-Error "No source files found!"
+              exit 1
+            }
+          }
+          
+          # 创建 artifacts 目录并复制生成的文件
+          mkdir artifacts -ErrorAction SilentlyContinue
+          # 查找生成的 .exe 文件（可能在当前目录或 build_output 目录）
+          Get-ChildItem -Recurse -Filter *.exe | Where-Object { $_.Name -like "*Process-Hider*.exe" } | Copy-Item -Destination .\artifacts\
+          
+          # 确保至少有一个文件被复制
+          if ((Get-ChildItem artifacts\*.exe).Count -eq 0) {
+            Write-Error "No executable found to copy!"
+            exit 1
+          }
 
-    # 4. (可选) 上传生成的文件作为 Artifact
-    # 这样你就可以在 Actions 页面直接下载编译好的 .exe 文件
-    - name: Upload executable
-      uses: actions/upload-artifact@v4
-      with:
-        name: Process-Hider-x64
-        path: |
-          **/Release/*.exe
-          **/*.exe
+      # Step 4: 列出 artifacts 内容
+      - name: List artifacts
+        run: |
+          echo "Generated files:"
+          dir artifacts
+
+      # Step 5: 上传工件（供 Actions 页面下载）
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: Process-Hider-x64
+          path: artifacts/*
+
+      # Step 6: 获取当前时间（用于版本标签）
+      - name: Get current time
+        id: current-time
+        uses: josStorer/get-current-time@v2.0.2
+        with:
+          format: YYYYMMDD-HHmmSS
+          utcOffset: "+08:00"
+
+      # Step 7: 创建 GitHub Release
+      - name: Create GitHub Release
+        id: create_release
+        uses: actions/create-release@v1
+        with:
+          tag_name: ${{ format('Process-Hider-v{0}', steps.current-time.outputs.formattedTime) }}
+          release_name: ${{ format('Process-Hider Build {0}', steps.current-time.outputs.formattedTime) }}
+          body: |
+            ## Process-Hider 自动构建
+            
+            - 构建时间：${{ steps.current-time.outputs.formattedTime }}
+            - 平台：Windows x64
+            - 注意：此版本仅用于教育研究目的
+            
+            ### 使用说明
+            1. 以管理员身份运行 `Process-Hider.exe`
+            2. 按下 `END` 键停止隐藏进程
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Step 8: 上传 EXE 文件到 Release
+      - name: Upload executable to release
+        run: |
+          $releaseId = "${{ steps.create_release.outputs.id }}"
+          $repo = "${{ github.repository }}"
+          $token = "${{ secrets.GITHUB_TOKEN }}"
+          
+          Get-ChildItem artifacts\*.exe | ForEach-Object {
+            $fileName = $_.Name
+            $filePath = $_.FullName
+            echo "Uploading $fileName to release..."
+            
+            curl -X POST `
+              -H "Authorization: token $token" `
+              -H "Content-Type: application/octet-stream" `
+              --data-binary "@$filePath" `
+              "https://uploads.github.com/repos/$repo/releases/$releaseId/assets?name=$fileName"
+          }
