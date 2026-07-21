@@ -102,15 +102,16 @@ jobs:
           tag_name: ${{ format('Process-Hider-v{0}', steps.current-time.outputs.formattedTime) }}
           release_name: ${{ format('Process-Hider Build {0}', steps.current-time.outputs.formattedTime) }}
           body: |
-            ## Process-Hider 自动构建
+            ## 自动构建
             
-            - 构建时间：${{ steps.current-time.outputs.formattedTime }}
+            - 时间：${{ steps.current-time.outputs.formattedTime }}
             - 平台：Windows x64
-            - 注意：此版本仅用于教育研究目的
+            - 注意：本项目旨在技术研究与合法合规的自动化测试，使用过程中请务必遵守相关软件的用户协议与法律法规。
             
             ### 使用说明
             1. 以管理员身份运行 `Process-Hider.exe`
-            2. 按下 `END` 键停止隐藏进程
+            2. 程序将会自动隐藏`同步专家远程版`、`同步专家网吧版`、`向日葵远程`、`网易UU远程`、`连连控`、`Todesk`
+            2. 按下键盘的 `END` 键停止隐藏进程的程序
           draft: false
           prerelease: false
         env:
