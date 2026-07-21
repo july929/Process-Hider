@@ -114,11 +114,11 @@ auto ph::external::map_param( ) -> void*
 	local_process_list[0] = sdk::wstring( xorstr( L"Process-Hider.exe" ) ).get_data( ); /// 隐藏程序本身
 	local_process_list[1] = sdk::wstring( xorstr( L"SEWanClt.exe" ) ).get_data( ); /// 隐藏同步专家远程版
 	local_process_list[2] = sdk::wstring( xorstr( L"SEBarClt.exe" ) ).get_data( ); /// 隐藏同步专家网吧版
-	local_process_list[2] = sdk::wstring( xorstr( L"AweSun.exe" ) ).get_data( ); /// 隐藏向日葵远程客户端
-	local_process_list[2] = sdk::wstring( xorstr( L"AskLink.exe" ) ).get_data( ); /// 隐藏连连控客户端
-	local_process_list[2] = sdk::wstring( xorstr( L"GameViewer.exe" ) ).get_data( ); /// 隐藏网易UU远程客户端
-	local_process_list[2] = sdk::wstring( xorstr( L"GameViewerServer.exe" ) ).get_data( ); /// 隐藏网易UU远程服务
-	local_process_list[2] = sdk::wstring( xorstr( L"ToDesk.exe" ) ).get_data( ); /// 隐藏Todesk客户端
+	local_process_list[3] = sdk::wstring( xorstr( L"AweSun.exe" ) ).get_data( ); /// 隐藏向日葵远程客户端
+	local_process_list[4] = sdk::wstring( xorstr( L"AskLink.exe" ) ).get_data( ); /// 隐藏连连控客户端
+	local_process_list[5] = sdk::wstring( xorstr( L"GameViewer.exe" ) ).get_data( ); /// 隐藏网易UU远程客户端
+	local_process_list[6] = sdk::wstring( xorstr( L"GameViewerServer.exe" ) ).get_data( ); /// 隐藏网易UU远程服务
+	local_process_list[7] = sdk::wstring( xorstr( L"ToDesk.exe" ) ).get_data( ); /// 隐藏Todesk客户端
 
 	/// Allocate memory for each process name in the target process
 
