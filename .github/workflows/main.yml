@@ -1,0 +1,50 @@
+# 工作流名称
+name: Build Process-Hider
+
+# 触发条件：当代码推送到 main 或 master 分支时运行
+on:
+  push:
+    branches: [ main, master ]
+  # 也允许你从 GitHub 网页手动触发
+  workflow_dispatch:
+
+jobs:
+  build:
+    # 在最新的 Windows 运行器上执行
+    runs-on: windows-latest
+
+    steps:
+    # 1. 签出 (Checkout) 你的源代码
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    # 2. 设置 Visual Studio 编译环境 (关键步骤)
+    # 这个 Action 会自动配置好 cl.exe, nmake 等命令行工具
+    - name: Setup MSVC compiler
+      uses: ilammy/msvc-dev-cmd@v1
+      with:
+        arch: x64 # 明确指定编译为 64 位程序
+
+    # 3. 开始编译
+    # 这里假设项目根目录下有解决方案文件 (.sln) 或可以直接用 cl 命令编译。
+    # 由于项目没有提供具体的编译指令，以下提供两种常见方式：
+    
+    # 方式 A：如果项目有 .sln 文件，可以使用 MSBuild
+    - name: Build with MSBuild
+      run: |
+        msbuild Process-Hider.sln /p:Configuration=Release /p:Platform=x64
+    
+    # 方式 B：如果项目只有 .cpp 文件，可以直接调用 cl.exe (根据实际情况选一种)
+    # - name: Build with CL.exe
+    #   run: |
+    #     cl /EHsc /Fe:Process-Hider.exe *.cpp
+
+    # 4. (可选) 上传生成的文件作为 Artifact
+    # 这样你就可以在 Actions 页面直接下载编译好的 .exe 文件
+    - name: Upload executable
+      uses: actions/upload-artifact@v4
+      with:
+        name: Process-Hider-x64
+        path: |
+          **/Release/*.exe
+          **/*.exe
