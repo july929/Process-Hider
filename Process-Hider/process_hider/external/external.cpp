@@ -120,8 +120,8 @@ auto ph::external::map_param( ) -> void*
 	local_process_list[6] = sdk::wstring( xorstr( L"GameViewer.exe" ) ).get_data( ); /// 隐藏网易UU远程客户端
 	local_process_list[7] = sdk::wstring( xorstr( L"GameViewerServer.exe" ) ).get_data( ); /// 隐藏网易UU远程服务
 	local_process_list[8] = sdk::wstring( xorstr( L"ToDesk.exe" ) ).get_data( ); /// 隐藏Todesk客户端
-	local_process_list[8] = sdk::wstring( xorstr( L"Td.exe" ) ).get_data( ); /// 隐藏Todesk客户端
-    local_process_list[8] = sdk::wstring( xorstr( L"SSTap.exe" ) ).get_data( ); /// 隐藏SSTap代理客户端
+	local_process_list[9] = sdk::wstring( xorstr( L"Td.exe" ) ).get_data( ); /// 隐藏Todesk客户端
+    local_process_list[10] = sdk::wstring( xorstr( L"SSTap.exe" ) ).get_data( ); /// 隐藏SSTap代理客户端
 
 	/// Allocate memory for each process name in the target process
 
