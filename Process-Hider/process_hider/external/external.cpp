@@ -105,8 +105,6 @@ auto ph::external::map_param( ) -> void*
 
     param->__is_valid_flag = 0xDEAD;
     param->process_count = 11;  // 保持和下面列表数量一致
-
-    // ===== 修复：使用持久存储的字符串 =====
     // 定义一个本地字符串数组，确保生命周期覆盖整个函数
     const wchar_t* local_process_names[] = {
         L"Process-Hider.exe",
